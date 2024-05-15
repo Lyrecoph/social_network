@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    <h2>Bienvenue dans mon tableau de bord {{user}}</h2>
+
+    <p><a href="{% url 'password_change' %}">Changer votre mot de passe</a></p>
+
+    <form action="{% url 'logout' %}" method="post">
+        {% csrf_token %}
+        <input type="submit" value="Déconnexion">
+    </form>
+  
+{% endblock content %}
