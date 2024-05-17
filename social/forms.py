@@ -1,7 +1,7 @@
 from django import forms
 # from django.forms.widgets import ClearableFileInput
 
-from social.models import Post, Media
+from social.models import Post, Media, Comment
 
 # Génère le formulaire pour créer un post
 class PostForm(forms.ModelForm):
@@ -34,4 +34,11 @@ class MediaForm(forms.ModelForm):
 #     def __init__(self, *args, **kwargs):
 #         super().__init__(*args, **kwargs)
 #         self.fields['image'].required = False
+
+# Génère le formulaire commentaire
+class CommentForm(forms.ModelForm):
+    content = forms.CharField(widget=forms.Textarea(attrs={'rows': 4, 'cols': 30, 'required': True}))
+    class Meta:
+        model = Comment
+        fields = ('content',)
         

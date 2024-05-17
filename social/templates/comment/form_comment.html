@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock title %}
+
+{% block content %}
+    {% if messages %}
+        {% for message in messages %}
+            <li>{{message}}</li>
+        {% endfor %}
+    {% endif %}
+
+    <h2>{{ page_title }}</h2>
+    <form action="." method="post">
+        {% csrf_token %}
+        {{form_comment.as_p}}
+        <input type="submit" value="{{page_title}}">
+    </form>
+  
+{% endblock content %}
+  

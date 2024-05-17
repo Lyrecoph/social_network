@@ -20,6 +20,13 @@
               {% endfor %}
             {% endif %}
             <p>{{post.owner}}</p>
+            <p><a href="{% url 'update_post' post.id %}">Modifier une publication</a></p>
+            {% if post.post_comment.all %}
+              {% for comment in post.post_comment.all %}
+                <li>{{comment}} <span><a href="{% url 'update_comment' post.id comment.id %}">Edit</a></span></li>
+              {% endfor %}
+            {% endif %}
+            <p><a href="{% url 'add_comment' post.id %}">Ajouter un commentaire</a></p>
         </div>
 
         {% if not forloop.last %}

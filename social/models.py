@@ -52,7 +52,10 @@ class Comment(CreationModificationMixin):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_comment')
     users_like = models.ManyToManyField(User, related_name='comment_like', through='LikeComment')
     
-
+    def __str__(self) -> str:
+        return self.content
+    
+    
 # Le modèle LikePost est un modèle intermédiaire qui représente les "likes" des publications.
 # Il relie les utilisateurs aux publications qu'ils aiment.
 class LikePost(models.Model):
