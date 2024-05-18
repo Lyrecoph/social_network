@@ -11,4 +11,5 @@ urlpatterns = [
     path('comment/update/<int:post_id>/<int:comment_id>/', views.CommentCreateUpdateView.as_view(), name='update_comment'),
     
     path('', views.post_list, name='post_list'),
+    path('ajax-like/', views.like_item, name='like_item'),
 ]

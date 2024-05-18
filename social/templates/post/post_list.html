@@ -12,26 +12,95 @@
     <h2>Liste des publications</h2>
     <a href="{% url 'create_post' %}">Ajouter un publication</a>
     {% for post in posts  %}
-        <div>
-            <p>{{post.content}}</p>
-            {% if post.post_media.all %}
-              {% for image in post.post_media.all  %}
-                <img src="{{image.image.url}}" alt="" srcset="">
-              {% endfor %}
-            {% endif %}
-            <p>{{post.owner}}</p>
-            <p><a href="{% url 'update_post' post.id %}">Modifier une publication</a></p>
-            {% if post.post_comment.all %}
-              {% for comment in post.post_comment.all %}
-                <li>{{comment}} <span><a href="{% url 'update_comment' post.id comment.id %}">Edit</a></span></li>
-              {% endfor %}
-            {% endif %}
-            <p><a href="{% url 'add_comment' post.id %}">Ajouter un commentaire</a></p>
-        </div>
+    <!-- recupère le nombre total de likes et le nombre total de users qui ont liked -->
+        {% with total_post_like=post.users_like.count total_post_user=post.users_like.all %}
+          
+          <div>
+              <p>{{post.content}}</p>
+              {% if post.post_media.all %}
+                {% for image in post.post_media.all  %}
+                  <img src="{{image.image.url}}" alt="" srcset="">
+                {% endfor %}
+              {% endif %}
+              <p>{{post.owner}}</p>
+              <p>
+                <span class="total-post-like">{{ total_post_like }}</span>
+                <button
+                  href="#"
+                  class="total-post-btn"
+                  data-action="{% if request.user in total_post_user %}un{% endif %}like"
+                  data-item_id="{{ post.id }}"
+                >
+                  <!-- si l'utilisateur n'est pas dans la liste de ceux qui ont like -->
+                  {% if not request.user in total_post_user %}
+                    Like
+                  {% else %}
+                    Unlike
+                  {% endif %}
+                </button>
+              </p>
+              <p><a href="{% url 'update_post' post.id %}">Modifier une publication</a></p>
+              {% if post.post_comment.all %}
+                {% for comment in post.post_comment.all %}
+                  <li>{{comment}} <span><a href="{% url 'update_comment' post.id comment.id %}">Edit</a></span></li>
+                {% endfor %}
+              {% endif %}
+              <p><a href="{% url 'add_comment' post.id %}">Ajouter un commentaire</a></p>
+          </div>
 
-        {% if not forloop.last %}
-          <hr>
-        {% endif %}
+          {% if not forloop.last %}
+            <hr>
+          {% endif %}
+
+        {% endwith %}
     {% endfor %}
 {% endblock content %}
+
+<script>
   
+</script>
+{% block dom %}
+  const cookie = getCookie('csrftoken')
+  const url = '{% url "like_item" %}'
+  let options = {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': cookie,
+    },
+    mode: 'same-origin'
+  }
+  // recupère l'ensemble des btns qui porte la classe total-post-btn
+  // parcours chaque btn
+  document.querySelectorAll(".total-post-btn").forEach(button =>{
+    // ajoute un événement click 
+    button.addEventListener('click', function(e){
+      // déclare un formData pour envoyer les données au serveur
+      let formData = new FormData()
+      // recupère les données de data
+      formData.append('item_id', button.dataset.item_id)
+      formData.append('action', button.dataset.action)
+      // passe le formData au body de l'options
+      options['body'] = formData
+
+      // envoie les données au serveur avec le fetch et verifie si les données ont été envoyées avec succès
+      fetch(url, options).then(resp => resp.json())
+        .then(data => {
+          if(data['status'] == 'success'){
+            // recupère l'action de l'ancienne btn
+            let previous = button.dataset.action;
+            let action = previous == 'like' ? 'unlike' : 'like';
+            // remplace la valeur action de l'ancienne btn par la nouvelle
+            button.dataset.action = action
+            // ensuite remplace ça au niveau de mon html
+            button.innerHTML = action;
+            // recupère l'element parent et decendre ensuite à l'element span
+            let span = button.parentNode.firstElementChild
+            // recupère le contenu de l'element span
+            let totalCount = parseInt(span.innerHTML)
+            // si l'action est like alors on ajoute increment ou decrement
+            span.innerHTML = previous == 'like' ? totalCount + 1 : totalCount - 1
+          }
+        })
+    })
+  })
+{% endblock dom %}

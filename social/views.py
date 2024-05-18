@@ -1,9 +1,11 @@
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.forms import modelformset_factory
 from django.views import View
 from django.utils.decorators import method_decorator
+from django.views.decorators.http import require_POST
 
 from social.forms import PostForm, MediaForm, CommentForm
 from social.models import Post, Media, Comment
@@ -216,6 +218,32 @@ class CommentCreateUpdateView(View):
         context['form_comment'] = comment_form
         return render(request, self.template_name, context)  
     
+    
+# cette fonction permet de liker un commentaire soite un publication
+@login_required
+@require_POST
+def like_item(request):
+    # recupère l'action si c'est un like ou delike
+    action = request.POST.get('action')
+    # recupère l'id de l'element à liker ou deliker
+    item_id = request.POST.get('item_id')
+    
+    if action and item_id:
+        try:
+            # Tente de récupérer le post correspondant à l'id fourni
+            post = Post.objects.get(id=item_id)
+            if action == 'like':
+                # Ajoute l'utilisateur courant à la liste des utilisateurs qui aiment ce post
+                post.users_like.add(request.user)
+            else:
+                 # Supprime l'utilisateur courant de la liste des utilisateurs qui aiment ce post
+                post.users_like.remove(request.user)
+            # Retourne une réponse JSON indiquant le succès de l'opération
+            return JsonResponse({'status':'success','message': 'Action effectuée avec succès'})
+        except Post.DoesNotExist:
+            return JsonResponse({'status': 'error','message': 'Cet élément n\'existe pas'})
+
+    return JsonResponse({'status': 'error','message': 'Une erreur est survenue'})
 # @login_required
 # def add_comment(request, post_id):
 #     template_name = 'comment/form_comment.html'

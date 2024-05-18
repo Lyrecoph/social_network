@@ -9,5 +9,28 @@
     {% block content %}
       
     {% endblock content %}
+
+    
+    
+      <script>
+        // vérifie que le template a chargé les éléments
+        document.addEventListener('DOMContentLoaded', function(e){
+          function getCookie(name, value=undefined){
+            if(value == undefined){
+              const cookies = document.cookie.split(";")
+              for(const item of cookies){
+                const [key, value] = item.split("=")
+                if(key == name){
+                  return value
+                }
+              }
+            }
+            return null
+          }
+          {% block dom %}
+        
+          {% endblock dom %}
+        })
+      </script>
 </body>
 </html>
