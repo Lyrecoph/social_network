@@ -1,0 +1,71 @@
+{% for post in posts  %}
+{% with total_post_like=post.users_like.count total_post_user=post.users_like.all %}
+  
+  <div class="col-md-7">
+      <div class="social-feed-separated">
+          <div class="social-avatar">
+              <a href="">
+                  <img alt="image" src="https://bootdey.com/img/Content/avatar/avatar1.png">
+              </a>
+          </div>
+  
+          <div class="social-feed-box">
+              <div class="pull-right social-action dropdown">
+                  <button data-toggle="dropdown" class="dropdown-toggle btn-white">
+                      <i class="fa fa-angle-down"></i>
+                  </button>
+                  <ul class="dropdown-menu m-t-xs">
+                      <li><a href="#">Config</a></li>
+                  </ul>
+              </div>
+              <div class="social-avatar">
+                  <a href="#">
+                      {{post.owner}}
+                  </a>
+                  <small class="text-muted">{{post.created_at}}</small>
+              </div>
+              <div class="social-body">
+                  <p>
+                    {{post.content}}
+                  </p>
+                  <img src="https://bootdey.com/img/Content/avatar/avatar1.png" class="img-responsive">
+                  <div class="btn-group">
+                    <!-- <button class="btn btn-white btn-xs"> <i class="fa fa-thumbs-up"></i> <span>{{total_post_like}}</span> Like this</button> -->
+                    {% include "partial/like_item.html" with total_like=total_post_like total_user=total_post_user item=post model="post" tag="button" tag_class="btn btn-white btn-xs" %}
+                    <button class="btn btn-white btn-xs"><i class="fa fa-comments"></i> Comment</button>
+                  </div>
+              </div>
+              <div class="social-footer">
+                {% if post.post_comment.all %}
+                {% for comment in post.post_comment.all %}
+                  {% with  total_comment_like=comment.users_like.count total_comment_user=comment.users_like.all  %}
+                    <div class="social-comment">
+                        <a href="" class="pull-left">
+                            <img alt="image" src="https://bootdey.com/img/Content/avatar/avatar2.png">
+                        </a>
+                        <div class="media-body">
+                          <a href="#">
+                            {{comment.owner}}
+                          </a>
+                          {{comment.content}}
+                          <br>
+                          <!-- <a href="#" class="small"><i class="fa fa-thumbs-up"></i> {{total_comment_like}} Like this!</a> -
+                          <small class="text-muted">12.06.2014</small> -->
+                          {% include "partial/like_item.html" with total_like=total_comment_like total_user=total_post_user item=comment model="comment" tag="a" tag_class="small" %} -
+                          <small class="text-muted">{{comment.created_at}}</small>
+                        </div>
+                    </div>
+                  {% endwith %}
+                {% endfor %}
+                {% endif %}
+                <div class="social-comment">
+                  <div class="media-body">
+                      <textarea class="form-control" placeholder="Write comment..."></textarea>
+                  </div>
+                </div>
+              </div>
+          </div>
+      </div>
+  </div>
+{% endwith %}
+{% endfor %}

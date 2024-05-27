@@ -1,11 +1,13 @@
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import PageNotAnInteger, Paginator, EmptyPage
 from django.forms import modelformset_factory
 from django.views import View
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
+from django.apps import apps
 
 from social.forms import PostForm, MediaForm, CommentForm
 from social.models import Post, Media, Comment
@@ -168,10 +170,27 @@ class PostCreateUpdateView(View):
 @login_required
 def post_list(request):
     template_name = 'post/post_list.html'
+    template_ajax = 'post/ajax_post_list.html'
+
     context = {}
     # recupère toutes les posts avec leurs propriétaires et leurs users qui les aiment
     posts = Post.objects.select_related('owner').prefetch_related('users_like').all()
+    paginator = Paginator(posts, 2)
+    page = request.GET.get('page')
+    page_only = request.GET.get('page_only')
+    
+    try:
+        posts = paginator.page(page)
+    except PageNotAnInteger:
+        posts = paginator.page(1)
+    except EmptyPage:
+        # si la requête est de type ajax
+        if page_only:
+            return HttpResponse('')
+        posts = paginator.page(paginator.num_pages)
     context['posts'] = posts
+    if page_only:
+        return render(request, template_ajax, context)   
     return render(request, template_name, context)
 
 
@@ -227,20 +246,23 @@ def like_item(request):
     action = request.POST.get('action')
     # recupère l'id de l'element à liker ou deliker
     item_id = request.POST.get('item_id')
-    
+    # recupère le model de l'element à liker ou deliker
+    model = request.POST.get('model')
+    # permet d'obtenir un label à partir d'un model
+    item = apps.get_model('social', model)
     if action and item_id:
         try:
             # Tente de récupérer le post correspondant à l'id fourni
-            post = Post.objects.get(id=item_id)
+            obj = item.objects.get(id=item_id)
             if action == 'like':
                 # Ajoute l'utilisateur courant à la liste des utilisateurs qui aiment ce post
-                post.users_like.add(request.user)
+                obj.users_like.add(request.user)
             else:
                  # Supprime l'utilisateur courant de la liste des utilisateurs qui aiment ce post
-                post.users_like.remove(request.user)
+                obj.users_like.remove(request.user)
             # Retourne une réponse JSON indiquant le succès de l'opération
             return JsonResponse({'status':'success','message': 'Action effectuée avec succès'})
-        except Post.DoesNotExist:
+        except item.DoesNotExist:
             return JsonResponse({'status': 'error','message': 'Cet élément n\'existe pas'})
 
     return JsonResponse({'status': 'error','message': 'Une erreur est survenue'})

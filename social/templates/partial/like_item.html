@@ -1,0 +1,9 @@
+<{{ tag }}
+  href="#"
+  class="{{ tag_class }} total-post-btn {% if request.user in total_user %}text-primary{% endif %} "
+  data-action="{% if request.user in total_user %}un{% endif %}like"
+  data-item_id="{{ item.id }}"
+  data-model="{{ model }}"
+>
+  <i class="fa fa-thumbs-up"></i> <span>{{ total_like }}</span> Like this
+</{{ tag }}>

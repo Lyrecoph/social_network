@@ -126,7 +126,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = 'static/'
-STATICFILIES_DIRS = BASE_DIR /'static/'
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 
 # crée un dossier media au niveau de la racine de notre projet
 MEDIA_URL = '/media/'
@@ -140,7 +142,7 @@ MEDIA_ROOT = BASE_DIR /'media/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = reverse_lazy('login')  
-LOGIN_REDIRECT_URL = reverse_lazy('profile')
+LOGIN_REDIRECT_URL = reverse_lazy('post_list')
 LOGOUT_URL = reverse_lazy('logout')
 
 # EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
