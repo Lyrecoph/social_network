@@ -266,6 +266,26 @@ def like_item(request):
             return JsonResponse({'status': 'error','message': 'Cet élément n\'existe pas'})
 
     return JsonResponse({'status': 'error','message': 'Une erreur est survenue'})
+
+@login_required
+@require_POST
+def add_ajax_comment(request):
+    # recupère l'id du post
+    post_id = request.POST.get('id')
+    # recupère le commentaire
+    content = request.POST.get('comment')
+    template_name = 'partial/comment_list.html'
+    # si l'id et le contenu du post existe
+    if post_id and content:
+        try:
+            # Tente de récupérer le post correspondant à l'id fourni
+            post = Post.objects.get(id=post_id)
+            comment = Comment.objects.create(post=post, content=content, owner=request.user)
+            context = {'comment': comment}
+            return render(request, template_name, context)
+        except Post.DoesNotExist:
+            return HttpResponse('error')
+    return HttpResponse('error')
 # @login_required
 # def add_comment(request, post_id):
 #     template_name = 'comment/form_comment.html'

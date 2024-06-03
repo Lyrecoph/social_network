@@ -55,6 +55,7 @@
     })
   })
 
+  // Cette fonction permet d'ajouter la pagination en scrollant
   function paginatorwithAjax(){
     let page = 1;
     var emptyPage = false;
@@ -90,5 +91,46 @@
     })
   }
 
+  // Cette fonction permet d'ajouter un commentaire
+  function addCommentWithAjax(){
+    const url = '{% url "add_ajax_comment" %}'
+    let options = {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': cookie,
+      },
+      mode: 'same-origin'
+    };
+
+    document.querySelectorAll('.send-comment').forEach(sendButton => {
+      sendButton.addEventListener('click', function(e) {
+        let socialComment = sendButton.closest('.social-comment');
+        let textarea = socialComment.querySelector('textarea');
+        let comment = textarea.value.trim();
+        let post_id = textarea.dataset.id;
+  
+        if (comment && post_id) {
+          let formData = new FormData();
+          formData.append('comment', comment);
+          formData.append('id', post_id);
+          options['body'] = formData;
+  
+          fetch(url, options)
+            .then(resp => resp.text())
+            .then(data => {
+              if (data === 'error') {
+                console.log('error');
+              } else {
+                socialComment.insertAdjacentHTML('beforebegin', data);
+                textarea.value = ''; // clear the textarea
+              }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+      });
+    });
+  }
+
+  addCommentWithAjax()
   paginatorwithAjax()
 {% endblock dom %}

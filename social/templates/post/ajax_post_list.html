@@ -40,28 +40,25 @@
                 {% for comment in post.post_comment.all %}
                   {% with  total_comment_like=comment.users_like.count total_comment_user=comment.users_like.all  %}
                     <div class="social-comment">
-                        <a href="" class="pull-left">
-                            <img alt="image" src="https://bootdey.com/img/Content/avatar/avatar2.png">
-                        </a>
-                        <div class="media-body">
-                          <a href="#">
-                            {{comment.owner}}
-                          </a>
-                          {{comment.content}}
-                          <br>
-                          <!-- <a href="#" class="small"><i class="fa fa-thumbs-up"></i> {{total_comment_like}} Like this!</a> -
-                          <small class="text-muted">12.06.2014</small> -->
-                          {% include "partial/like_item.html" with total_like=total_comment_like total_user=total_post_user item=comment model="comment" tag="a" tag_class="small" %} -
-                          <small class="text-muted">{{comment.created_at}}</small>
-                        </div>
+                        {% include 'partial/comment_list.html' %}
                     </div>
                   {% endwith %}
                 {% endfor %}
                 {% endif %}
                 <div class="social-comment">
                   <div class="media-body">
-                      <textarea class="form-control" placeholder="Write comment..."></textarea>
+                      <textarea 
+                        class="form-control" 
+                        placeholder="Laisser un commentaire..."
+                        data-id={{post.id}}
+                      >
+                      </textarea>
                   </div>
+                  <br>
+                  <div class="media-body">
+                    <button class="btn btn-primary btn-sm send-comment">commenter</button>
+                    <button class="btn btn-danger btn-sm">effacer</button>
+                </div>
                 </div>
               </div>
           </div>
