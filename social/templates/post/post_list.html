@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}-post list{% endblock title %}
+{% block title %}-Liste des publications{% endblock title %}
 
 {% block content %}
     {% if messages %}
@@ -10,11 +10,19 @@
       {% endfor %}
     {% endif %}
     <h2>Liste des publications</h2>
-    <a href="{% url 'create_post' %}">Ajouter un publication</a>
-    <a href="{% url 'logout' %}">Déconnexion</a>
-    
-    <div class="container" id="post-ajax">
-      {% include "post/ajax_post_list.html" %}
+    <a class="btn btn-primary" href="{% url 'create_post' %}">Ajouter un publication</a><br><br>
+    <a class="btn btn-primary" href="{% url 'logout' %}">Déconnexion</a>
+    <br>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-7" id="post-ajax">
+          {% include "post/ajax_post_list.html" %}
+        </div>
+        <div class="col-md-4" id="notif-feed">
+          <h2>Notifications</h2>
+          {% include 'partial/notifications.html' %}
+        </div>
+      </div>
     </div>
 {% endblock content %}
 
@@ -24,42 +32,118 @@
 
 {% block dom %}
   const cookie = getCookie('csrftoken')
-  const url = '{% url "like_item" %}'
-  let options = {
-    method: 'POST',
-    headers: {
-      'X-CSRFToken': cookie,
-    },
-    mode: 'same-origin'
-  }
-  document.querySelectorAll(".total-post-btn").forEach(button =>{
-    button.addEventListener('click', function(e){
-      let formData = new FormData()
-      formData.append('item_id', button.dataset.item_id)
-      formData.append('action', button.dataset.action)
-      formData.append('model', button.dataset.model)
-      options['body'] = formData
+
+  const notifSocket = new WebSocket(
+    'ws://' + window.location.host + '/ws/notif/feed/'
+  );
+
+  // Lorsque la connection est ouvert
+  notifSocket.onopen = function(){
+    console.log("Connection is open")
+  };
+
+  
+  notifSocket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+    switch(data.name){
+      case "greeting":
+        console.log(data.message)
+        break;
       
-      fetch(url, options).then(resp => resp.json())
-        .then(data => {
-          if(data['status'] == 'success'){
-            let previous = button.dataset.action;
-            let action = previous == 'like' ? 'unlike' : 'like';
-            button.dataset.action = action
-            button.classList.toggle('text-primary')
-            let span = button.querySelector('span')
-            let totalCount = parseInt(span.innerHTML)
-            span.innerHTML = previous == 'like' ? totalCount + 1 : totalCount - 1
-          }
-        })
+      case "notif_feed":
+        console.log(data.message)
+        buildDomContent(data.message)
+        break;
+      
+      default:
+        throw new Error("Type de message inconnu")
+        break;
+    }
+  };
+  
+  notifSocket.onclose = function(e){
+    console.error(e)
+  }
+
+  function markNotifAsRead(){
+    document.querySelectorAll('.notif-read').forEach(function(item){
+      item.addEventListener("click", function(event){
+        let notif_id = item.dataset.id
+        notifSocket.send(JSON.stringify({"type": "notif_read", "message": notif_id}))
+      })
     })
-  })
+  }
+
+  function buildDomContent(data) {
+    const json_data = JSON.parse(data);
+
+    let content= "";
+
+    for(let notification of json_data){
+      content += `
+        <div 
+          class="noty_bar notif-read noty_type__success noty_theme__unify--v1--light noty_close_with_click noty_close_with_button g-mb-25 mb-2"
+          data-id = "${notification.id}"  
+        >
+          <div class="noty_body">
+            <div class="g-mr-20">
+                <div class="noty_body__icon">
+                    <i class="hs-admin-check"></i>
+                </div>
+            </div>
+            <div class="${notification.read ? '' : 'text-primary'}">${ notification.user.username } a ${ notification.action } ${notification.target || 'un objet'} à  ${new Date(notification.created).toLocaleString()}</div>
+          </div>
+          <div class="noty_close_button">×</div>
+        </div>
+      `
+    }
+
+    document.querySelector("#notif-feed").innerHTML = content;
+    markNotifAsRead()
+  }
+  
+  function likeItemAjax(){
+    const url = '{% url "like_item" %}'
+    let options = {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': cookie,
+      },
+      mode: 'same-origin'
+    }
+
+    document.querySelectorAll(".total-post-btn").forEach(button => {
+      button.addEventListener('click', function(e){
+        let formData = new FormData()
+        formData.append('item_id', button.dataset.item_id)
+        formData.append('action', button.dataset.action)
+        formData.append('model', button.dataset.model)
+        options['body'] = formData
+        
+        fetch(url, options).then(resp => resp.json())
+          .then(data => {
+            if(data['status'] == 'success'){
+              let previous = button.dataset.action;
+              let action = previous == 'like' ? 'unlike' : 'like';
+              button.dataset.action = action
+              button.classList.toggle('text-primary')
+
+              let span = button.querySelector('span')
+              let totalCount = parseInt(span.innerHTML)
+              span.innerHTML = previous == 'like' ? totalCount + 1 : totalCount - 1
+              notifSocket.send(JSON.stringify({type: "notif_feed"}))
+            }
+          })
+      })
+    })
+  }
 
   // Cette fonction permet d'ajouter la pagination en scrollant
   function paginatorwithAjax(){
     let page = 1;
     var emptyPage = false;
     var canRequest = false;
+
     // écoute moi l'evenement scroll de ma fenêtre
     window.addEventListener('scroll', function(e){
       // récupère la totalité de la page et sa position
@@ -71,6 +155,7 @@
         var postList = document.querySelector('#post-ajax')
         postList.insertAdjacentHTML('beforeEnd', spinner)
         const targetSpinner = postList.querySelector('.spinner')
+
         fetch(`?page_only=1&page=${page}`)
           .then(resp => resp.text())
           .then(data => {
@@ -104,33 +189,35 @@
 
     document.querySelectorAll('.send-comment').forEach(sendButton => {
       sendButton.addEventListener('click', function(e) {
-        let socialComment = sendButton.closest('.social-comment');
+        let socialComment = sendButton.parentNode.parentNode;
         let textarea = socialComment.querySelector('textarea');
         let comment = textarea.value.trim();
         let post_id = textarea.dataset.id;
   
-        if (comment && post_id) {
-          let formData = new FormData();
-          formData.append('comment', comment);
-          formData.append('id', post_id);
-          options['body'] = formData;
-  
-          fetch(url, options)
-            .then(resp => resp.text())
-            .then(data => {
-              if (data === 'error') {
-                console.log('error');
-              } else {
-                socialComment.insertAdjacentHTML('beforebegin', data);
-                textarea.value = ''; // clear the textarea
-              }
-            })
-            .catch(error => console.error('Error:', error));
-        }
+    
+        let formData = new FormData();
+        formData.append('comment', comment);
+        formData.append('id', post_id);
+        options['body'] = formData;
+
+        fetch(url, options)
+          .then(resp => resp.text())
+          .then(data => {
+            if (data === 'error') {
+              console.log('error');
+            } else {
+              socialComment.parentNode.firstElementChild.insertAdjacentHTML('afterbegin', data);
+              textarea.value = ''; // clear the textarea
+              notifSocket.send(JSON.stringify({type: "notif_feed"}))
+
+            }
+          })
       });
     });
   }
 
   addCommentWithAjax()
   paginatorwithAjax()
+  likeItemAjax()
+  markNotifAsRead()
 {% endblock dom %}

@@ -2,6 +2,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.contenttypes.models import ContentType
 from django.core.paginator import PageNotAnInteger, Paginator, EmptyPage
 from django.forms import modelformset_factory
 from django.views import View
@@ -9,8 +10,11 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
 from django.apps import apps
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
 from social.forms import PostForm, MediaForm, CommentForm
-from social.models import Post, Media, Comment
+from social.models import Post, Media, Comment, Notification
 # Create your views here.
 
 # Cette vue permet de créer une publication avec des fichiers multimédias associés. 
@@ -96,7 +100,7 @@ from social.models import Post, Media, Comment
 #     context['form_media'] = form_media
 #     return render(request, template_name, context)
 
-# Cette fonction est chargé de créer et de modifier une publication
+# Vue pour créer et mettre à jour les publications
 @method_decorator(login_required, name='dispatch')
 class PostCreateUpdateView(View):
     template_name = 'post/create_post.html'
@@ -149,13 +153,15 @@ class PostCreateUpdateView(View):
                 elif form.cleaned_data.get('DELETE'):
                     if form.instance.pk:
                         form.instance.delete()
+
+            # Enregistrer la notification
+            action = 'mis à jour une publication' if post_id else 'créé une nouvelle publication'
+            # Notification.objects.create(user=request.user, action=action)
+            add_notification(request.user, action, post)
             
-            if post_id:
-                messages.success(request, 'Publication mise à jour avec succès')
-            else:
-                messages.success(request, 'Publication créée avec succès')
-            
+            messages.success(request, 'Publication mise à jour avec succès' if post_id else 'Publication créée avec succès')
             return redirect('post_list')
+            
         else:
             messages.error(request, 'Une erreur est survenue, veuillez réessayer')
         
@@ -178,7 +184,8 @@ def post_list(request):
     paginator = Paginator(posts, 2)
     page = request.GET.get('page')
     page_only = request.GET.get('page_only')
-    
+
+    notifications = Notification.objects.select_related('user', 'content_type').all()
     try:
         posts = paginator.page(page)
     except PageNotAnInteger:
@@ -189,13 +196,14 @@ def post_list(request):
             return HttpResponse('')
         posts = paginator.page(paginator.num_pages)
     context['posts'] = posts
+    context['notifications'] = notifications
+
     if page_only:
         return render(request, template_ajax, context)   
     return render(request, template_name, context)
 
-
-
-# applique le décorateur login_required à toutes les méthodes de la vue.
+# N'est plus,utiliser est remplacé par add_ajax_comment
+# applique le décorateur login_required à toutes les méthodes de la vue. 
 @method_decorator(login_required, name='dispatch')
 # Cette classe est chargé de la creation et de la modification d'un commentaire
 class CommentCreateUpdateView(View):
@@ -230,14 +238,20 @@ class CommentCreateUpdateView(View):
             comment.post = post
             comment.owner = request.user
             comment.save()
+
+            # Enregistrer la notification
+            # action = 'commenté une publication'
+            # notification = Notification.objects.create(user=request.user, action=action)
+            # add_notification(request.user, action, comment)
+
             messages.success(request, 'Commentaire ajouté avec succès' if not comment_id else 'Commentaire mis à jour avec succès')
             return redirect('post_list')
         else:
             messages.error(request, 'Une erreur est survenue, veuillez réessayer')
         context['form_comment'] = comment_form
-        return render(request, self.template_name, context)  
-    
-    
+        return render(request, self.template_name, context)
+
+  
 # cette fonction permet de liker un commentaire soite un publication
 @login_required
 @require_POST
@@ -250,6 +264,7 @@ def like_item(request):
     model = request.POST.get('model')
     # permet d'obtenir un label à partir d'un model
     item = apps.get_model('social', model)
+
     if action and item_id:
         try:
             # Tente de récupérer le post correspondant à l'id fourni
@@ -257,9 +272,11 @@ def like_item(request):
             if action == 'like':
                 # Ajoute l'utilisateur courant à la liste des utilisateurs qui aiment ce post
                 obj.users_like.add(request.user)
+                add_notification(request.user, action, obj)
             else:
                  # Supprime l'utilisateur courant de la liste des utilisateurs qui aiment ce post
                 obj.users_like.remove(request.user)
+                add_notification(request.user, action, obj)
             # Retourne une réponse JSON indiquant le succès de l'opération
             return JsonResponse({'status':'success','message': 'Action effectuée avec succès'})
         except item.DoesNotExist:
@@ -267,6 +284,8 @@ def like_item(request):
 
     return JsonResponse({'status': 'error','message': 'Une erreur est survenue'})
 
+
+# Vue pour ajouter des commentaires via AJAX
 @login_required
 @require_POST
 def add_ajax_comment(request):
@@ -281,11 +300,21 @@ def add_ajax_comment(request):
             # Tente de récupérer le post correspondant à l'id fourni
             post = Post.objects.get(id=post_id)
             comment = Comment.objects.create(post=post, content=content, owner=request.user)
+            
+            # Créer une notification pour le commentaire ajouté
+            add_notification(request.user, 'commenté', post)
+            
             context = {'comment': comment}
             return render(request, template_name, context)
         except Post.DoesNotExist:
             return HttpResponse('error')
     return HttpResponse('error')
+
+def add_notification(user, action, target):
+    notif = Notification(user=user, action=action, target=target)
+    notif.save()
+
+
 # @login_required
 # def add_comment(request, post_id):
 #     template_name = 'comment/form_comment.html'

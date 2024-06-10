@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey
 
 User = get_user_model()
 
@@ -70,3 +72,31 @@ class LikeComment(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_like_comment')
     created_at = models.DateTimeField(auto_now_add=True)
     
+
+class Notification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notified')
+    action = models.CharField(max_length=255)
+    # indique si la notification a été lu ou pas
+    read = models.BooleanField(default=False)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, related_name='obj', null=True, blank=True)
+    # sert à sauvegarder l'id de l'objet recupérer
+    object_id = models.IntegerField(null=True, blank=True)
+    # associe l'object et son id
+    target = GenericForeignKey('content_type', 'object_id')
+
+    # optimisation des requêtes
+    class Meta:
+        ordering = ['-created']
+        indexes = [models.Index(fields=['-created']), models.Index(fields=['content_type', 'object_id'])]
+
+    # def __str__(self):
+    #     if self.content_type:
+    #         return f"{self.user.username} - {self.action} on {self.content_type.model}"
+    #     return f"{self.user.username} - {self.action}"
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.action} on {self.content_type.model}"
+
+

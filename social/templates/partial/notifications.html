@@ -1,0 +1,21 @@
+{% for notification in notifications %}
+    <div 
+        class="noty_bar notif-read noty_type__success noty_theme__unify--v1--light noty_close_with_click noty_close_with_button g-mb-25 mb-2"
+        data-id="{{notification.id}}"
+    >
+        <div class="noty_body">
+        <div class="g-mr-20">
+            <div class="noty_body__icon">
+                <i class="hs-admin-check"></i>
+            </div>
+        </div>
+        <!-- <div>Tom a commente à 25/03/24.</div> -->
+        <div class="{% if not notification.read %} text-primary {% endif %}">{{notification.user|capfirst}} a {{notification.action}} à {{notification.created|date}}.</div>
+        </div>
+        <div class="noty_close_button">×</div>
+    </div>
+{% endfor %}
+
+
+
+  
