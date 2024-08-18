@@ -1,6 +1,6 @@
 from django import forms
-from django.contrib.auth.models import User
-
+# from django.contrib.auth.models import User
+from accounts.models import CustomUser as User
 
 class UserRegistration(forms.ModelForm):
     password = forms.CharField(label= 'password', widget=forms.PasswordInput)

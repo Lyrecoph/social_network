@@ -9,10 +9,16 @@
         <li>{{message}}</li>
       {% endfor %}
     {% endif %}
-    <h2>Liste des publications</h2>
-    <a class="btn btn-primary" href="{% url 'create_post' %}">Ajouter un publication</a><br><br>
-    <a class="btn btn-primary" href="{% url 'logout' %}">Déconnexion</a>
-    <br>
+    <h2 class="mx-2">Liste des publications</h2>
+    <div class="d-flex justify-content-between">
+      <a class="btn btn-primary mx-2" href="{% url 'create_post' %}">Ajouter un publication</a> 
+      <form method="POST" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Déconnexion</button>
+      </form>
+    </div>
+    <!-- <a class="btn btn-primary" href="{% url 'logout' %}">Déconnexion</a> -->
+    <br><br>
     <div class="container">
       <div class="row">
         <div class="col-md-7" id="post-ajax">

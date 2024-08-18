@@ -1,9 +1,9 @@
 from django.db import models
-from django.contrib.auth import get_user_model
+# from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
-
-User = get_user_model()
+from accounts.models import CustomUser as User
+# User = get_user_model()
 
 # Create your models here.
 
@@ -38,7 +38,8 @@ class Post(CreationModificationMixin):
     # class Meta(CreationModificationMixin.Meta):
     #     indexes = [models.Index(fields=['slug'])]
         
-        
+    def __str__(self):
+        return self.content
 
 # Génère un table chargé d'ajouter les images
 class Media(models.Model):

@@ -1,4 +1,5 @@
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
+from accounts.models import CustomUser as User
 from rest_framework.serializers import ModelSerializer, RelatedField
 
 from social.models import Notification, Post, Comment

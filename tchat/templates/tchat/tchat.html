@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+    {{user.username|json_script:"from-user"}}
+    {{user_to.username|json_script:"to-user"}}
+
+    <p>{{user}} veut lancer une conversation avec {{following}}</p>
+    <p>Emetteur: {{user.username|escapejs}}</p>
+    <p>Destinataire : {{user_to.username|escapejs}}</p>
+
+    <div class="container">
+        <div class="row clearfix">
+            <div class="col-lg-12">
+                <div class="card chat-app">
+                    <div id="plist" class="people-list">
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fa fa-search"></i></span>
+                            </div>
+                            <input type="text" class="form-control" placeholder="Search...">
+                        </div>
+                        <ul class="list-unstyled chat-list mt-2 mb-0">
+                          {% for following in following_users %}
+                              <li class="clearfix">
+                                  <img src="https://bootdey.com/img/Content/avatar/avatar1.png" alt="avatar">
+                                  <div class="about">
+                                    <div class="name">{{ following.username }}</div>
+                                    <div class="status"> 
+                                      <i class="fa fa-circle {% if following.is_online %}online{% else %}offline{% endif %}"></i> 
+                                      {% if following.is_online %}online{% else %}offline{% endif %}
+                                    </div>                                            
+                                  </div>
+                              </li>
+                          {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="chat">
+                        <div class="chat-header clearfix">
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <a href="javascript:void(0);" data-toggle="modal" data-target="#view_info">
+                                        <img src="https://bootdey.com/img/Content/avatar/avatar2.png" alt="avatar">
+                                    </a>
+                                    <div class="chat-about">
+                                        <h6 class="m-b-0">{{ user_to.username }}</h6>
+                                        <small>
+                                          <i class="fa fa-circle {% if is_user_to_online %}online{% else %}offline{% endif %}"></i> 
+                                          {% if is_user_to_online %}online{% else %}
+                                              <!-- {{ last_seen|date:"d/m/Y H:i" }} -->
+                                                offline
+                                          {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                                <!-- Additional elements can go here -->
+                            </div>
+                        </div>
+                        <div id="tchat-content" class="chat-history">
+                            <ul class="m-b-0">
+                                
+                            </ul>
+                        </div>
+                        <div class="chat-message clearfix">
+                            <div class="input-group mb-0">
+                                <div class="input-group-prepend">
+                                    <button id="chat-message-submit"  type="submit" class="btn btn-primary input-group-text">
+                                        <i class="fa fa-send"></i>
+                                    </button>
+                                </div>
+                                <input id="chat-message-input" type="text" class="form-control" placeholder="Enter text here...">                                    
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+{% block styles %}
+  <link rel="stylesheet" href="{% static 'assets/css/tchat.css' %}">
+{% endblock styles %}
+
+{% block dom %}
+  const toUser = document.getElementById("to-user").textContent.replace(/"/g, '');
+  const fromUser = document.getElementById("from-user").textContent.replace(/"/g, '');
+  const conversation = Array.from([toUser, fromUser].sort()).join("__")
+  console.log("conversation:", conversation);
+  // construire l'url du websocket
+  const url = 'ws://' + window.location.host + `/ws/tchat/room/${conversation}/`;
+  // construire le websocket
+  const tchatSocket = new WebSocket(url);
+
+  let currentPage = 1;
+  let loading = false;
+
+  tchatSocket.onopen = function(){
+    console.log('chat socket opened');
+    loadMessages(currentPage);
+  }
+  
+  tchatSocket.onmessage = function(e){
+    const data = JSON.parse(e.data)
+    console.log(data['message']);
+    appendMessage(data.message, fromUser);
+  }
+
+  tchatSocket.onclose = function(error){
+    console.error(e)
+  }
+
+  const input = document.getElementById('chat-message-input')
+  const sendBtn = document.getElementById('chat-message-submit')
+
+  sendBtn.addEventListener('click', function(e) {
+    const message = input.value;
+    if (message) {
+      tchatSocket.send(JSON.stringify({
+        'message': message, 
+      }));
+      input.value = '';
+      input.focus();
+    }
+  });
+
+  input.addEventListener('keypress', function(e){
+    if(e.key == 'Enter'){
+        e.preventDefault();
+        sendBtn.click();
+    }
+  })
+
+  const chatArea = document.getElementById('tchat-content');
+    chatArea.addEventListener('scroll', function() {
+    if (chatArea.scrollTop === 0 && !loading) {
+        loadMessages(++currentPage);
+    }
+  });
+
+  function loadMessages(page) {
+    loading = true;
+    const url = `/tchat/messages/${conversation}?page=${page}`;
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        const newMessages = data.messages;
+        newMessages.reverse(); // Inverser les messages pour les afficher dans le bon ordre
+        newMessages.forEach(message => {
+          prependMessage(message, fromUser);
+        });
+        loading = false;
+    });
+  }
+
+  function appendMessage(message, fromUser) {
+    const isFromUser = message.from_user.username === fromUser;
+    const alignmentClass = isFromUser ? 'float-right' : 'float-left';
+    const messageClass = isFromUser ? 'other-message' : 'my-message';
+  
+    chatArea.querySelector('ul').innerHTML += `
+      <li class="clearfix">
+        <div class="message-data ${alignmentClass}">
+          <span class="message-data-time">${message.created_at}, ${message.from_user.username}</span>
+        </div>
+        <div class="message ${messageClass}">${message.content}</div>
+      </li>
+    `;
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }
+  
+  function prependMessage(message, fromUser) {
+    const isFromUser = message.from_user.username === fromUser;
+    const alignmentClass = isFromUser ? 'float-right' : 'float-left';
+    const messageClass = isFromUser ? 'other-message' : 'my-message';
+  
+    const newMessage = document.createElement('li');
+    newMessage.className = 'clearfix';
+    newMessage.innerHTML = `
+      <div class="message-data ${alignmentClass}">
+        <span class="message-data-time">${message.created_at}, ${message.from_user.username}</span>
+      </div>
+      <div class="message ${messageClass}">${message.content}</div>
+    `;
+    chatArea.querySelector('ul').prepend(newMessage);
+  }
+
+  document.addEventListener('DOMContentLoaded', (event) => {
+    const chatHistory = document.getElementById('tchat-content');
+    let page = 1;
+
+    chatHistory.addEventListener('scroll', () => {
+      if (chatHistory.scrollTop === 0) {
+        // Charger plus de messages lorsque l'utilisateur atteint le haut
+        page += 1;
+        loadMessages(page);
+      }
+    });
+
+    function loadMessages(page) {
+      fetch(`/messages/${conversation}/?page=${page}`)
+        .then(response => response.json())
+        .then(data => {
+          const messages = data.messages;
+          const messageList = chatHistory.querySelector('ul');
+
+          messages.forEach(message => {
+            const li = document.createElement('li');
+            li.textContent = message.content;
+            messageList.insertBefore(li, messageList.firstChild);
+          });
+        });
+    }
+  });
+{% endblock dom %}

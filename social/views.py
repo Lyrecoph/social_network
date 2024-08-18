@@ -122,7 +122,8 @@ class PostCreateUpdateView(View):
         
         context = {
             'form_post': form_post,
-            'form_media': form_media
+            'form_media': form_media,
+            'session' : 'post'
         }
         return render(request, self.template_name, context)
     
@@ -167,10 +168,10 @@ class PostCreateUpdateView(View):
         
         context = {
             'form_post': form_post,
-            'form_media': form_media
+            'form_media': form_media,
+            'session' : 'post'
         }
         return render(request, self.template_name, context)
-
 
 # Cette fonction est chargée d'affiché la liste des publications
 @login_required
@@ -184,8 +185,13 @@ def post_list(request):
     paginator = Paginator(posts, 2)
     page = request.GET.get('page')
     page_only = request.GET.get('page_only')
-
-    notifications = Notification.objects.select_related('user', 'content_type').all()
+    # récupère toutes les notifications hormis ceux de l'utilisateur connecté
+    notifications = Notification.objects.select_related('user', 'content_type').exclude(user_id=request.user.id)
+    # récupèrer les utilisateurs que suit l'utilisateur actuellement connecté
+    following_ids = request.user.follow_user.values_list('id', flat=True)
+    # récupère moi les notifications de l'utilisateur qui se trouve dans la liste des utilisateurs
+    # qui suit l'utilisateur actuellement connecté
+    notifications = notifications.filter(user_id__in=following_ids)
     try:
         posts = paginator.page(page)
     except PageNotAnInteger:
@@ -197,6 +203,8 @@ def post_list(request):
         posts = paginator.page(paginator.num_pages)
     context['posts'] = posts
     context['notifications'] = notifications
+    context['session'] = 'home'
+
 
     if page_only:
         return render(request, template_ajax, context)   
@@ -313,7 +321,6 @@ def add_ajax_comment(request):
 def add_notification(user, action, target):
     notif = Notification(user=user, action=action, target=target)
     notif.save()
-
 
 # @login_required
 # def add_comment(request, post_id):

@@ -1,7 +1,10 @@
-from django.urls import path
+from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from . import views
 urlpatterns = [
+    # path('', include('django.contrib.auth.urls')),
+    
+    # Les chémins ci-dessous ont été mise en commentaire car rien a été personnalisé
     path('profile/',views.profile, name='profile'),
     path('register/', views.register, name='register'),
     path('login/', auth_views.LoginView.as_view(), name='login'),
@@ -11,5 +14,9 @@ urlpatterns = [
     path('password-reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),
     path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
     path('password-reset-confirm/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
-    path('password-reset-complete/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete')
+    path('password-reset-complete/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
+    path('users', views.user_list, name='user_list'),
+    path('users/<username>/<email>/', views.user_detail, name='user_detail'),
+    path('ajax-follow/', views.follow_user, name='follow_user'),
 ]
+

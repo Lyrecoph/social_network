@@ -42,8 +42,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'django_extensions',
     
     'social.apps.SocialConfig',  
+    'tchat.apps.TchatConfig',
 ]
 
 MIDDLEWARE = [
@@ -162,3 +165,14 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = '127.0.0.1'
 EMAIL_PORT = '1025'
 DEFAULT_FROM_EMAIL = 'phidias@gmail.com'
+
+# ligne suivante pour indiquer à Django d'utiliser votre modèle CustomUser 
+# comme modèle utilisateur par défaut :
+AUTH_USER_MODEL = 'accounts.CustomUser'
+
+
+# permet d'utiliser les urls canoniques
+ABSOLUTE_URL_OVERRIDES = {
+    # fonction anonyme (lambda u)
+    "accounts.customuser": lambda u: reverse_lazy("user_detail", kwargs={"username": u.username, "email": u.email}),
+}
