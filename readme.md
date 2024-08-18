@@ -2,6 +2,11 @@
 # Project Overview
 This project is a Django-based social network application that includes several features such as user accounts, social interactions, and real-time chat functionality.
 
+![](media/images/screenNetwork1.png)
+![](media/images/screenNetwork2.png)
+![](media/images/screenNetwork3.png)
+![](media/images/screenNetwork4.png)
+
 ## Features
 
 **1. User Accounts (accounts):**
@@ -21,13 +26,13 @@ Real-time messaging functionality between users using WebSockets.
 **1. Clone the repository:**
 
 ```bash
-git clone <repository_url>
+git clone https://github.com/Lyrecoph/social_network.git
 ```
 
 **2. Navigate to the project directory:**
 
 ```bash
-cd social_network1
+cd social_network
 ```
 
 **3. Create a virtual environment:**
@@ -219,6 +224,33 @@ EMAIL_HOST_PASSWORD = 'your-email-password'
 
 # Placeholder for other configurations, like caching, third-party APIs, etc.
 ```
+
+## Technologies used
+
+This project was carried out using the following technologies:
+
+## Languages
+
+**Python:** Used for backend development with Django.
+**Javascript vanilla**: Used for frontend and backend development 
+
+## Backend frameworks
+
+**Django:** Main backend web framework used to build the server, manage the business logic and interact with the database.
+
+## Services
+
+**WebSocket:** Used for real-time chat functionalities.
+
+## Development Tools
+
+**Git :** Used for version control.
+**GitHub:** Used for source code hosting and collaboration.
+**VS Code:** Main code editor for development.
+
+## Databases
+
+**PostgreSQL:** Relational database used to store application data.
 
 ## To-Do List
 
