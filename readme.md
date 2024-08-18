@@ -2,10 +2,10 @@
 # Project Overview
 This project is a Django-based social network application that includes several features such as user accounts, social interactions, and real-time chat functionality.
 
-![](media/images/screenNetwork1.png)
-![](media/images/screenNetwork2.png)
-![](media/images/screenNetwork3.png)
-![](media/images/screenNetwork4.png)
+![](./images/screenNetwork1.png)
+![](./images/screenNetwork2.png)
+![](./images/screenNetwork3.png)
+![](./images/screenNetwork4.png)
 
 ## Features
 
